@@ -1,6 +1,6 @@
-import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=94d8d7d981f7';
-import { observePosters, retryPosters } from './posters.js?v=94d8d7d981f7';
-import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=94d8d7d981f7';
+import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=a24c14d1b785';
+import { observePosters, retryPosters } from './posters.js?v=a24c14d1b785';
+import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=a24c14d1b785';
 const $ = id => document.getElementById(id);
 const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
@@ -34,7 +34,11 @@ function render() {
     const events = visible.filter(event => event.date === key); count += events.length;
     for(const event of events) {
       const card = element('article','','event'), details = element('div','','event-details'), title = element('h4','');
-      const poster = element('div', '', 'poster');
+      const poster = element(event.url ? 'a' : 'div', '', 'poster');
+      if (event.url) {
+        poster.href = event.url;
+        poster.setAttribute('aria-label', `${event.title} on MyAnimeList`);
+      }
       card.dataset.eventKey = `${event.date}/${event.malId}/${event.episode}`;
       card.tabIndex = -1;
       if (event.malId) poster.dataset.malId = event.malId;
