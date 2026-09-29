@@ -1,4 +1,4 @@
-﻿// Store only normalized list fields, never the XML, titles, or account details.
+// Store only normalized list fields, never the XML, titles, or account details.
 export const LIST_KEY = 'anidub:list:v1';
 export function saveList(list) {
   localStorage.setItem(LIST_KEY, JSON.stringify([...list].map(([id, entry]) => [id, {

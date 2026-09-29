@@ -1,4 +1,4 @@
-﻿"""Browser integration checks. Run a local HTTP server, then: python tests/browser_checks.py
+"""Browser integration checks. Run a local HTTP server, then: python tests/browser_checks.py
 Requires the optional playwright Python package and Microsoft Edge.
 All network data in this test is fictional and intercepted locally.
 """
@@ -39,7 +39,16 @@ with sync_playwright() as p:
     page.wait_for_function('document.body.dataset.result')
     assert page.locator('body').get_attribute('data-result') == 'pass'
     print('PASS: parser and next-episode unit checks')
+    # Simulate obsolete unversioned files still cached from a previous release.
+    page.route('**/app.js', lambda route: route.fulfill(body='// old release', content_type='text/javascript'))
+    page.route('**/styles.css', lambda route: route.fulfill(body='', content_type='text/css'))
     page.goto(BASE); ready(page)
+    assert '?v=' in page.locator('script[type=module]').get_attribute('src')
+    for mode in ['compact', 'cards', 'compact', 'cards']:
+        page.locator(f'[data-view="{mode}"]').click()
+        assert page.locator('.poster').first.is_visible() == (mode == 'cards')
+        assert page.locator(f'[data-view="{mode}"]').get_attribute('aria-pressed') == 'true'
+    print('PASS: both layout buttons switch repeatedly despite stale unversioned assets')
     upload(page)
     assert page.evaluate("localStorage.getItem('anidub:list:v1')") is None
     assert '2 of your 3 anime' in page.locator('#match-status').inner_text()

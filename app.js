@@ -1,6 +1,6 @@
-import { restoreList, saveList, forgetList, nextForList } from './personal.js';
-import { observePosters, retryPosters } from './posters.js';
-import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js';
+import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=b3a5dc97a248';
+import { observePosters, retryPosters } from './posters.js?v=b3a5dc97a248';
+import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=b3a5dc97a248';
 const $ = id => document.getElementById(id);
 const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);

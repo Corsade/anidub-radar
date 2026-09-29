@@ -49,7 +49,7 @@ This suite intercepts feed, metadata, and image requests with fictional data. It
 
 ## GitHub Pages
 
-Push to `main`; this repository publishes from `main` → `/ (root)` under Settings → Pages → Deploy from a branch. `.nojekyll` disables Jekyll processing. All local asset paths are relative, so the repository subpath works. No custom deployment workflow is needed.
+Before publishing JavaScript or CSS changes, run `python tools/version_assets.py`. It fingerprints the local assets and updates HTML/module URLs together so cached files from a previous release cannot disable new controls. Then push to `main`; this repository publishes from `main` → `/ (root)` under Settings → Pages → Deploy from a branch. `.nojekyll` disables Jekyll processing. All local asset paths are relative, so the repository subpath works. No custom deployment workflow is needed.
 
 ## Verification
 
