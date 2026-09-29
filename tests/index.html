@@ -1,5 +1,6 @@
-﻿<!doctype html><html lang="en"><meta charset="utf-8"><title>AniDub Radar tests</title><body><pre id="result">Running…</pre><script type="module">
+<!doctype html><html lang="en"><meta charset="utf-8"><title>AniDub Radar tests</title><body><pre id="result">Running…</pre><script type="module">
 import {parseICS, parseMAL, matchesFilter} from '../parser.js';
+import {nextForList} from '../personal.js';
 try {
  const assert = (condition,message) => { if(!condition) throw new Error(message); };
  const feed = parseICS('BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20260929\r\nSUMMARY:Fictional Star\\, The\r\n Voyage - Ep 3\r\nURL:https://myanimelist.net/ani\r\n\tme/999001/Fictional\r\nEND:VEVENT\r\nEND:VCALENDAR');
@@ -8,14 +9,19 @@ try {
  assert(event.date === '2026-09-29', 'Preserve all-day date');
  assert(event.episode === '3', 'Extract episode');
  assert(event.malId === 999001, 'Extract numeric ID from folded MAL URL');
+ const projected = parseICS('BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART;VALUE=DATE:20260929\nSUMMARY:Fiction - Ep 4 (Projected)\nEND:VEVENT\nEND:VCALENDAR').events[0];
+ assert(projected.projected && projected.episode === '4', 'Separate projected marker from episode');
+ assert(!event.projected, 'Do not assume unmarked dates are projected');
  const list = parseMAL('<myanimelist><anime><series_animedb_id>999001</series_animedb_id><series_title>Different fictional title</series_title><series_episodes>12</series_episodes><my_watched_episodes>2</my_watched_episodes><my_status>Watching</my_status></anime></myanimelist>');
+ assert(nextForList([{...event,date:'2026-09-28'}, {...event,date:'2026-10-12'}],list,'2026-09-29').date === '2026-10-12', 'Find upcoming personal event beyond this week');
+ assert(nextForList([event],list,'2026-10-01') === null, 'No upcoming match');
  assert(matchesFilter(event,list,'watching'), 'Match by numeric ID despite different title');
  assert(!matchesFilter(event,list,'missing'), 'Matched entry is not missing');
  assert(list.get(999001).watched === 2 && list.get(999001).total === 12,'Episode progress');
  assert(matchesFilter({...event,malId:999002},list,'missing'),'Unlisted ID');
  let rejected = false; try {parseMAL('<myanimelist><anime></myanimelist>');} catch {rejected = true;}
  assert(rejected,'Reject malformed XML');
- document.getElementById('result').textContent = 'PASS: folded ICS lines, all-day dates, episode summaries, MAL ID extraction, XML matching, progress, and malformed XML.';
+ document.getElementById('result').textContent = 'PASS: folded ICS lines, all-day dates, episode summaries, MAL ID extraction, XML matching, progress, malformed XML, projected dates, and next personal episode.';
  document.body.dataset.result = 'pass';
 } catch(error) { document.getElementById('result').textContent = 'FAIL: '+error.message; document.body.dataset.result = 'fail'; }
 </script></body></html>

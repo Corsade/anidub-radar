@@ -132,3 +132,36 @@ footer p { margin: 6px 0; }
   .week-toolbar { align-items: flex-start; flex-direction: column; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+/* Personal list controls and calendar tools */
+.remember { display:flex !important; align-items:flex-start; gap:7px; margin-top:16px; font-size:11px !important; }
+.remember input { width:auto; margin:3px 0 0; accent-color:var(--accent); }
+#clear { text-align:left; font-size:10px; background:#edf1f7; }
+#match-status { grid-column:1/-1; color:var(--accent); font-size:11px; }
+#match-status:empty, #next-status:empty { display:none; }
+.schedule-tools { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; margin:0 0 18px; }
+.search-field { flex:1; min-width:160px; }
+.search-field label { display:block; font-size:11px; font-weight:650; margin-bottom:5px; }
+.search-field input { background:white; border:1px solid var(--line); border-radius:5px; padding:10px 12px; color:var(--ink); font-size:13px; }
+.view-switch { display:flex; gap:3px; }
+.view-switch button[aria-pressed=true] { background:var(--ink); color:white; }
+#next-for-me { color:var(--accent); }
+#next-status { font-size:12px; background:#dceefd; padding:12px; border-radius:5px; }
+.feed-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; }
+#retry-posters { background:transparent; font-size:10px; }
+.event-details .episode { position:static; display:inline-block; background:#dce9f5; color:#234d72; padding:3px 7px; border-radius:4px; font-size:10px; margin:0 5px 7px 0; }
+.projected { display:inline-block; color:#73501b; background:#ffedc9; border-radius:4px; padding:3px 7px; margin-bottom:7px; font-size:10px; font-weight:650; }
+.next-match { outline:3px solid var(--accent); outline-offset:5px; border-radius:5px; }
+.compact .events { display:grid; grid-template-columns:1fr; gap:8px; }
+.compact .poster { display:none; }
+.compact .event { background:white; padding:12px 15px; border-radius:5px; }
+.compact .event-details { padding:0; }
+.compact .event h4 { font-size:14px; }
+.compact .dub-label { display:none; }
+.compact .day { padding:14px 0; }
+@media(max-width:650px) {
+  .personal { grid-template-columns:1fr; }
+  .import { max-width:100%; }
+  .feed-line { align-items:flex-start; }
+  .feed-actions { flex-shrink:0; flex-direction:column; align-items:flex-end; }
+  .search-field { flex-basis:100%; }
+}

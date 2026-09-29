@@ -1,4 +1,4 @@
-﻿export const FEED_URL = 'https://fizzyfrys.github.io/anime-dub-calendar/anime-dubs.ics';
+export const FEED_URL = 'https://fizzyfrys.github.io/anime-dub-calendar/anime-dubs.ics';
 const unescapeICS = value => value.replace(/\\([nN,;\\])/g, (_, c) => /n/i.test(c) ? '\n' : c);
 export function parseICS(text) {
   const lines = text.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n');
@@ -12,11 +12,13 @@ export function parseICS(text) {
       const date = /^\d{8}(?:T\d{6}Z?)?$/.test(raw) ? `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}` : '';
       const validDate = date && !Number.isNaN(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date;
       if (validDate && item.SUMMARY && item.STATUS !== 'CANCELLED') {
-        const summary = unescapeICS(item.SUMMARY);
+        const rawSummary = unescapeICS(item.SUMMARY);
+        const projected = /\(projected\)|\[projected\]/i.test(rawSummary);
+        const summary = rawSummary.replace(/\s*(?:\(projected\)|\[projected\])/gi, '').trim();
         const episode = summary.match(/^(.*?)\s*[-–—:]\s*(?:Ep\.?|Episode)\s*(\d+(?:\s*[-–]\s*\d+)?)(.*)$/i);
         const mal = `${item.URL || ''} ${item.DESCRIPTION || ''}`.match(/https?:\/\/(?:www\.)?myanimelist\.net\/anime\/(\d+)(?=[/\s?#]|$)/i);
         const malId = mal ? Number(mal[1]) : null;
-        events.push({ date, title: episode ? episode[1] : summary, episode: episode ? episode[2] + episode[3] : null, malId, url: malId ? `https://myanimelist.net/anime/${malId}` : null });
+        events.push({ date, projected, title: episode ? episode[1] : summary, episode: episode ? episode[2] + episode[3] : null, malId, url: malId ? `https://myanimelist.net/anime/${malId}` : null });
       } else if (item.STATUS !== 'CANCELLED') skipped++;
       item = null; continue;
     }
