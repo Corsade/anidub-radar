@@ -1,0 +1,5 @@
+﻿# Personal exports must never be committed.
+*.xml
+*.xml.gz
+*.tmp
+__pycache__/
