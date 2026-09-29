@@ -103,6 +103,12 @@ with sync_playwright() as p:
     for width in [320,390,768,1440]:
         page.set_viewport_size({'width':width,'height':900})
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), width
+    page.evaluate("localStorage.setItem('anidub:list:v1', JSON.stringify({source:{username:'Fiction',syncedAt:1},entries:[[999001,{status:'watching',watched:2,total:12}]]}))")
+    page.reload(); ready(page)
+    assert '1 anime restored' in page.locator('#list-status').inner_text()
+    assert page.evaluate("Array.isArray(JSON.parse(localStorage.getItem('anidub:list:v1')))")
+    assert page.locator('#sync-form').count() == 0
+    print('PASS: saved-list migration preserves progress and removes sync metadata; XML-only interface')
     page.evaluate("localStorage.setItem('anidub:list:v1','broken')")
     page.reload(); ready(page)
     assert 'could not be read' in page.locator('#list-status').inner_text()

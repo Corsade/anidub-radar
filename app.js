@@ -1,14 +1,12 @@
-import { SYNC_ENDPOINT } from './config.js?v=a0aa0d9aadcc';
-import { fetchPublicList } from './sync.js?v=a0aa0d9aadcc';
-import { restoreSnapshot, saveList, forgetList, nextForList } from './personal.js?v=a0aa0d9aadcc';
-import { observePosters, retryPosters } from './posters.js?v=a0aa0d9aadcc';
-import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=a0aa0d9aadcc';
+import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=94d8d7d981f7';
+import { observePosters, retryPosters } from './posters.js?v=94d8d7d981f7';
+import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=94d8d7d981f7';
 const $ = id => document.getElementById(id);
 const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
 let week = addDays(new Date(), -((new Date().getDay()+6)%7));
-let list = null, filter = 'all', feed = null, loading = false, fileVersion = 0, view = 'cards', source = null, syncController = null;
-try { const snapshot = restoreSnapshot(); list = snapshot?.list || null; source = snapshot?.source || null; $('remember').checked = list !== null; if (list) $('list-status').textContent = `${list.size} anime restored from this device.`; }
+let list = null, filter = 'all', feed = null, loading = false, fileVersion = 0, view = 'cards';
+try { list = restoreList(); $('remember').checked = list !== null; if (list) $('list-status').textContent = `${list.size} anime restored from this device.`; }
 catch { $('list-status').textContent = 'Saved list could not be read. Import your XML to continue, or clear saved data.'; $('clear').hidden = false; }
 const format = (d, options) => d.toLocaleDateString(undefined, options);
 function element(tag, text, className) { const el = document.createElement(tag); el.textContent = text; if(className) el.className = className; return el; }
@@ -87,19 +85,19 @@ $('refresh').onclick = fetchFeed;
 document.querySelectorAll('[data-filter]').forEach(button => button.onclick = () => { $('next-status').textContent = ''; filter = button.dataset.filter; render(); });
 $('mal-file').onchange = async event => {
   const file = event.target.files[0]; if(!file) return;
-  const version = ++fileVersion; syncController?.abort(); syncController = null; $('sync-now').disabled = !SYNC_ENDPOINT; $('list-status').textContent = 'Reading XML locally…';
+  const version = ++fileVersion; $('list-status').textContent = 'Reading XML locally…';
   try {
     if(file.size > 20*1024*1024) throw new Error('This file is too large. Choose an uncompressed MAL XML export under 20 MB.');
     const parsed = parseMAL(await file.text()); if(version !== fileVersion) return;
-    source = null; $('sync-status').textContent = ''; list = parsed; filter = 'all'; $('clear').hidden = false;
+    list = parsed; filter = 'all'; $('clear').hidden = false;
     let saved = '';
-    if ($('remember').checked) { try { saveList(list, source); saved = ' Remembered on this device.'; } catch { saved = ' Could not save this list; it is available in this tab only. Clear saved data to remove any older saved list.'; } }
+    if ($('remember').checked) { try { saveList(list); saved = ' Remembered on this device.'; } catch { saved = ' Could not save this list; it is available in this tab only. Clear saved data to remove any older saved list.'; } }
     $('list-status').textContent = `${list.size} anime loaded. Personal filters are ready${list.size ? '.' : '; this list is empty.'}${saved}`; $('next-status').textContent = ''; render();
   } catch(error) { if(version === fileVersion) $('list-status').textContent = `${error.message} ${list ? 'Your previous list is still active.' : 'No list was loaded.'}`; }
   finally { if(version === fileVersion) event.target.value = ''; }
 };
 $('clear').onclick = () => {
-  fileVersion++; syncController?.abort(); syncController = null; source = null; $('mal-username').value = ''; $('sync-status').textContent = ''; $('sync-now').disabled = !SYNC_ENDPOINT; list = null; filter = 'all'; $('mal-file').value = ''; $('remember').checked = false;
+  fileVersion++; list = null; filter = 'all'; $('mal-file').value = ''; $('remember').checked = false;
   $('next-status').textContent = '';
   try { forgetList(); $('clear').hidden = true; $('list-status').textContent = 'List cleared and saved list data deleted from this device.'; }
   catch { $('clear').hidden = false; $('list-status').textContent = 'List cleared from this tab, but saved data could not be deleted. Allow browser storage and retry, or clear this site’s data in browser settings.'; }
@@ -108,7 +106,7 @@ $('clear').onclick = () => {
 $('remember').onchange = () => {
   try {
     if ($('remember').checked) {
-      if (list) saveList(list, source);
+      if (list) saveList(list);
       $('list-status').textContent = list ? 'List remembered on this device.' : 'Your next imported list will be remembered on this device.';
     } else { forgetList(); $('list-status').textContent = 'Saved list deleted. Any loaded list stays in this tab only.'; }
   } catch { $('list-status').textContent = 'Browser storage is unavailable. The requested save or deletion could not be completed; you can manage saved data in browser settings.'; }
@@ -130,38 +128,4 @@ $('next-for-me').onclick = () => {
   const card = [...document.querySelectorAll('.event')].find(card => card.dataset.eventKey === `${event.date}/${event.malId}/${event.episode}`);
   card?.classList.add('next-match'); card?.focus({preventScroll:true}); card?.scrollIntoView({block:'center'});
 };
-const syncTime = () => source ? ` Last successful sync for ${source.username}: ${new Date(source.syncedAt).toLocaleString()}.` : '';
-async function syncList() {
-  const username = $('mal-username').value.trim();
-  const version = ++fileVersion;
-  syncController?.abort();
-  const controller = new AbortController(); syncController = controller;
-  const timeout = setTimeout(() => controller.abort(), 90000);
-  $('sync-now').disabled = true;
-  try {
-    const parsed = await fetchPublicList(SYNC_ENDPOINT, username, controller.signal, message => { if (version === fileVersion) $('sync-status').textContent = message; });
-    if (version !== fileVersion) return;
-    list = parsed; source = {username, syncedAt:Date.now()}; filter = 'all';
-    let saved = '';
-    if ($('remember').checked) {
-      try { saveList(list, source); } catch { saved = ' Could not save this update to this device.'; }
-    }
-    $('sync-status').textContent = `Synced ${list.size} anime.${syncTime()}${saved}`;
-    $('list-status').textContent = 'Public MAL list loaded. Personal filters are ready.';
-    $('next-status').textContent = ''; render();
-  } catch(error) {
-    if (version !== fileVersion) return;
-    $('sync-status').textContent = `${controller.signal.aborted ? 'Sync timed out. Try again.' : error.message} ${list ? 'Your previous list is still active.' : 'No list was loaded.'}${syncTime()}`;
-  } finally {
-    clearTimeout(timeout);
-    if (version === fileVersion) { syncController = null; $('sync-now').disabled = !SYNC_ENDPOINT; }
-  }
-}
-if (source) $('mal-username').value = source.username;
-$('sync-form').onsubmit = event => { event.preventDefault(); void syncList(); };
-$('sync-now').disabled = !SYNC_ENDPOINT;
-if (!SYNC_ENDPOINT) $('sync-status').textContent = 'Public-list sync is awaiting server setup. Use XML import for now.';
-else if (source) $('sync-status').textContent = syncTime();
 render(); fetchFeed();
-// A remembered source opts into refresh on opening, at most once per five minutes.
-if (SYNC_ENDPOINT && source && Date.now() - source.syncedAt >= 300000) void syncList();

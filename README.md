@@ -1,6 +1,6 @@
 ﻿# AniDub Radar
 
-A small static English-dub episode calendar powered by [Anime Dub Calendar](https://github.com/fizzyfrys/anime-dub-calendar). The calendar and XML import need no backend, login, API keys, framework, or build step. Optional public MAL list syncing uses a small serverless endpoint and a MAL application Client ID.
+A small static English-dub episode calendar powered by [Anime Dub Calendar](https://github.com/fizzyfrys/anime-dub-calendar). No backend, login, API keys, framework, or build step.
 
 Live site: https://corsade.github.io/anidub-radar/
 
@@ -20,17 +20,9 @@ From this directory, run `python -m http.server 8000`, then open http://localhos
 
 ## Privacy and local storage
 
-XML is parsed locally and never uploaded, logged, or stored. By default the imported list lives only in this tab. **Remember on this device** is opt-in and stores only numeric IDs, statuses, and watched/total episode counts in this browser's localStorage (`anidub:list:v1`). It does not store XML, credentials, or titles. If the list was synced from MAL, it also remembers the public username and last successful sync timestamp. Unchecking Remember deletes the saved copy while retaining the current tab's list. **Clear list & delete saved data** removes both. Storage failures are reported; the tab can still be used without persistence. Other open tabs keep their in-memory list until cleared or closed.
+XML is parsed locally and never uploaded, logged, or stored. By default the imported list lives only in this tab. **Remember on this device** is opt-in and stores only numeric IDs, statuses, and watched/total episode counts in this browser's localStorage (`anidub:list:v1`). It does not store XML, account details, or titles. Unchecking Remember deletes the saved copy while retaining the current tab's list. **Clear list & delete saved data** removes both. Storage failures are reported; the tab can still be used without persistence. Other open tabs keep their in-memory list until cleared or closed.
 
 Do not commit personal XML exports. The repository ignores XML and compressed XML files. Poster lookups use IDs from the public calendar, never XML-only entries or watch progress.
-
-## Optional public MAL list sync
-
-Enter a public MAL username and select **Sync now** once the sync service is configured. The site reads the complete list by numeric ID, including statuses and progress. Private lists can still be imported through XML. An unsuccessful sync keeps your previous list. Remembered synced lists refresh on opening the site when at least five minutes old; the last successful sync time is shown. Importing XML disconnects the previous sync source.
-
-Setup is currently pending: `config.js` has an empty endpoint and Sync now is disabled. Follow [worker/README.md](worker/README.md) to register a MAL app, deploy the Cloudflare Worker, store the Client ID as a server-side secret, and set the public endpoint URL. Never add a client secret or access token to browser code or GitHub. A read-only sync needs no user OAuth token.
-
-Run `python tests/sync_checks.py` for mocked proxy and UI tests covering pagination, failed/partial syncs, automatic refresh, persistence, and XML fallback. Actual MAL authentication and Cloudflare deployment must be verified after configuration.
 
 ## Posters
 

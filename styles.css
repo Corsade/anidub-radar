@@ -165,9 +165,3 @@ footer p { margin: 6px 0; }
   .feed-actions { flex-shrink:0; flex-direction:column; align-items:flex-end; }
   .search-field { flex-basis:100%; }
 }
-#sync-form { display:grid; gap:8px; margin-bottom:8px; }
-#sync-form input { border:1px solid var(--line); border-radius:5px; padding:8px; font-size:13px; color:var(--ink); }
-#sync-form label { margin:0; }
-#sync-now { background:#147bc1; color:white; }
-#sync-help, #sync-status { font-size:11px; }
-.import-divider { border-top:1px solid var(--line); padding-top:14px; }

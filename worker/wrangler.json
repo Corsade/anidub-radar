@@ -1,7 +1,0 @@
-﻿{
-  "name": "anidub-radar-sync",
-  "main": "index.js",
-  "compatibility_date": "2026-09-29",
-  "vars": { "ALLOWED_ORIGINS": "https://corsade.github.io" },
-  "observability": { "enabled": false }
-}
