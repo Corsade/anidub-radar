@@ -8,6 +8,10 @@ Live site: https://corsade.github.io/anidub-radar/
 
 From this directory, run `python -m http.server 8000`, then open http://localhost:8000. Use an HTTP server rather than a file URL because the app uses JavaScript modules.
 
+## Appearance
+
+Use the **Dark mode** button in the header to switch themes. The site follows your system theme until you make a choice, then remembers that choice on this device (`anidub:theme:v1`). If browser storage is blocked, the toggle still works for the current page.
+
 ## Use the calendar
 
 - Navigate weeks with Previous, Next, or Today. Search titles within the displayed week and active filter.
@@ -58,3 +62,5 @@ Before publishing JavaScript or CSS changes, run `python tools/version_assets.py
 The initial deployed site was verified in Microsoft Edge with the live feed and real posters. The expanded parser and UI integration suites passed locally on September 29, 2026, including viewport widths 320, 390, 768, and 1440 px. Firefox, Safari, and physical devices have not been verified.
 
 Community ratings checks: with the local server running, use `python tests/ratings_checks.py` (Playwright and Edge). Covers numeric scores/vote counts, unrated anime, API errors, scores without images, compact view, duplicate-ID deduplication, persistent caching, and score expiry.
+
+Theme checks: `python tests/theme_checks.py` verifies system preference, theme switching by keyboard, saved choices, blocked storage, compact surfaces, and mobile widths.
