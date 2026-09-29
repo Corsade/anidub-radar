@@ -3,3 +3,8 @@
 *.xml.gz
 *.tmp
 __pycache__/
+.dev.vars
+.env
+.env.*
+.wrangler/
+node_modules/
