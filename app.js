@@ -1,6 +1,6 @@
-import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=a24c14d1b785';
-import { observePosters, retryPosters } from './posters.js?v=a24c14d1b785';
-import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=a24c14d1b785';
+import { restoreList, saveList, forgetList, nextForList } from './personal.js?v=1ea8e66edd99';
+import { observePosters, retryPosters } from './posters.js?v=1ea8e66edd99';
+import { FEED_URL, parseICS, parseMAL, matchesFilter } from './parser.js?v=1ea8e66edd99';
 const $ = id => document.getElementById(id);
 const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
@@ -19,7 +19,7 @@ function render() {
   $('next-for-me').disabled = !feed || loading;
   if (list) $('clear').hidden = false;
   $('calendar').classList.toggle('compact', view === 'compact');
-  $('retry-posters').hidden = view === 'compact';
+  $('retry-posters').hidden = false;
   $('match-status').textContent = list && feed ? `${new Set(feed.events.filter(event => list.has(event.malId)).map(event => event.malId)).size} of your ${list.size} anime appear in the current feed (all dates).` : list ? 'Load the calendar to check list matches.' : '';
   if (!feed) return;
   const query = $('search').value.trim().toLocaleLowerCase();
@@ -41,13 +41,13 @@ function render() {
       }
       card.dataset.eventKey = `${event.date}/${event.malId}/${event.episode}`;
       card.tabIndex = -1;
-      if (event.malId) poster.dataset.malId = event.malId;
+      if (event.malId) { poster.dataset.malId = event.malId; card.dataset.malId = event.malId; }
       poster.append(element('span', '◈', 'poster-mark'), element('span', event.malId ? 'Loading poster…' : 'Poster unavailable', 'poster-label'));
       const episode = element('span', event.episode ? `EP ${event.episode}` : 'Episode unspecified', 'episode');
       details.append(episode);
       if (event.projected) { const badge = element('span', 'Projected', 'projected'); badge.title = 'The feed marks this date as a projection. It may change.'; details.append(badge); }
       if(event.url) { const link = element('a',event.title + ' ↗'); link.href = event.url; link.setAttribute('aria-label',`${event.title} on MyAnimeList`); title.append(link); } else title.textContent = event.title;
-      details.append(title);
+      details.append(title, element('p', event.malId ? 'MAL score: loading…' : 'MAL score unavailable', 'rating'));
       const entry = list?.get(event.malId);
       if(entry?.status === 'watching') details.append(element('p',`${entry.watched ?? '?'} / ${entry.total || '?'} episodes watched`,'progress'));
       if(!event.malId) details.append(element('small','No MAL ID supplied; cannot match to your list.'));
@@ -58,7 +58,7 @@ function render() {
     section.append(cards); $('calendar').append(section);
   }
   $('week-count').textContent = `${count} episode${count === 1 ? '' : 's'}`;
-  if (view === 'cards') observePosters($('calendar'));
+  observePosters($('calendar'));
   if(!count) { $('empty').hidden = false; $('empty').textContent = query ? 'No titles match your search and filter this week. Clear the search or try another week.' : filter === 'all' ? 'No episodes listed for this week. Try another week.' : 'No episodes match this filter this week. Try All or another week.'; }
 }
 async function fetchFeed() {

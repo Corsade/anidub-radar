@@ -165,3 +165,5 @@ footer p { margin: 6px 0; }
   .feed-actions { flex-shrink:0; flex-direction:column; align-items:flex-end; }
   .search-field { flex-basis:100%; }
 }
+.rating { color:#426482; font-size:11px; font-weight:650; margin:7px 0 0; }
+.compact .rating { display:inline-block; margin-right:12px; }
