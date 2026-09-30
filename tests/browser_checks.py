@@ -35,6 +35,7 @@ with sync_playwright() as p:
         route.fulfill(content_type='application/json',body=json.dumps({'data':{'mal_id':id,'images':{'jpg':{'large_image_url':f'https://cdn.myanimelist.net/images/{id}.jpg'}}}}))
     page.route('https://api.jikan.moe/**',poster)
     page.route('https://cdn.myanimelist.net/**',lambda route:route.fulfill(body=PNG,content_type='image/png'))
+    page.route('https://graphql.anilist.co',lambda route:route.abort())
     page.goto(BASE+'tests/')
     page.wait_for_function('document.body.dataset.result')
     assert page.locator('body').get_attribute('data-result') == 'pass'

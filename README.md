@@ -64,3 +64,9 @@ The initial deployed site was verified in Microsoft Edge with the live feed and 
 Community ratings checks: with the local server running, use `python tests/ratings_checks.py` (Playwright and Edge). Covers numeric scores/vote counts, unrated anime, API errors, scores without images, compact view, duplicate-ID deduplication, persistent caching, and score expiry.
 
 Theme checks: `python tests/theme_checks.py` verifies system preference, theme switching by keyboard, saved choices, blocked storage, compact surfaces, and mobile widths.
+
+## Poster fallback
+
+If Jikan fails or has no poster, the app looks up AniList’s cover image using the exact numeric MAL ID (`Media(idMal: ...)`). It never matches by title or substitutes AniList ratings. Fallback images are cached for seven days, and a working cached poster stays visible during Jikan outages. AniList requests are paced at least 2.1 seconds apart and respect a rate-limit cooldown. A fresh rating with missing artwork no longer prevents a poster lookup. Both services receive only public calendar IDs. If neither source provides a usable image, the placeholder and retry control remain available.
+
+Run `python tests/fallback_checks.py` for mocked upstream failures, exact-ID validation, cached fallback reuse, and rating/artwork separation. On September 30, 2026, real fallback images for MAL IDs 61607, 60153, 50607, and 64340 were verified in Edge; Jikan returned 504 for all four at the time.

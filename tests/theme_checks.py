@@ -10,6 +10,7 @@ with sync_playwright() as p:
     feed=f'BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART;VALUE=DATE:{today}\nSUMMARY:Fictional Orbit - Ep 3 (Projected)\nURL:https://myanimelist.net/anime/999001\nEND:VEVENT\nEND:VCALENDAR'
     page.route('**/anime-dubs.ics',lambda r:r.fulfill(body=feed,content_type='text/calendar'))
     page.route('https://api.jikan.moe/**',lambda r:r.abort())
+    page.route('https://graphql.anilist.co',lambda route:route.abort())
     page.goto('http://localhost:8000/')
     page.wait_for_selector('.event')
     theme=lambda:page.locator('html').get_attribute('data-theme')

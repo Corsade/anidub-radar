@@ -16,6 +16,7 @@ with sync_playwright() as p:
         if id==333 and failure[0]: route.fulfill(status=503,body='unavailable'); return
         route.fulfill(content_type='application/json',body=json.dumps({'data':{'mal_id':id,'score':None if id==222 else score[0],'scored_by':12345,'images':{}}}))
     page.route('https://api.jikan.moe/**',api)
+    page.route('https://graphql.anilist.co',lambda route:route.abort())
     page.goto('http://localhost:8000/')
     page.locator('.event').first.scroll_into_view_if_needed()
     page.wait_for_function("document.querySelectorAll('.rating').length === 4 && [...document.querySelectorAll('.rating')].every(e=>!e.textContent.includes('loading'))")

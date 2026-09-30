@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><title>AniDub Radar tests</title><body><pre id="result">Running…</pre><script type="module">
-import {parseICS, parseMAL, matchesFilter} from '../parser.js?v=0587ea92adc4';
-import {nextForList} from '../personal.js?v=0587ea92adc4';
+import {parseICS, parseMAL, matchesFilter} from '../parser.js?v=c2c0260b516e';
+import {nextForList} from '../personal.js?v=c2c0260b516e';
 try {
  const assert = (condition,message) => { if(!condition) throw new Error(message); };
  const feed = parseICS('BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20260929\r\nSUMMARY:Fictional Star\\, The\r\n Voyage - Ep 3\r\nURL:https://myanimelist.net/ani\r\n\tme/999001/Fictional\r\nEND:VEVENT\r\nEND:VCALENDAR');

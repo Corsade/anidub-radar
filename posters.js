@@ -7,7 +7,7 @@ const SCORE_TTL = 86400000;
 const saved = new Map();
 const validScore = value => typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 10;
 function safeImage(value) {
-  try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'cdn.myanimelist.net' ? url.href : null; }
+  try { const url = new URL(value); return url.protocol === 'https:' && ['cdn.myanimelist.net', 's4.anilist.co'].includes(url.hostname) ? url.href : null; }
   catch { return null; }
 }
 try {
@@ -16,10 +16,10 @@ try {
     if (!Array.isArray(row) || !Number.isSafeInteger(row[0]) || row[0] <= 0 || !row[1]) continue;
     const value = row[1], now = Date.now();
     const imageValid = safeImage(value.url) && Number.isFinite(value.expires) && value.expires > now && value.expires <= now + POSTER_TTL;
-    const ratingValid = (value.score === null || validScore(value.score)) && Number.isFinite(value.scoreExpires) && value.scoreExpires > now && value.scoreExpires <= now + SCORE_TTL && Number.isFinite(value.checkedAt) && value.checkedAt <= now;
+    const ratingValid = value.scoreAvailable !== false && (value.score === null || validScore(value.score)) && Number.isFinite(value.scoreExpires) && value.scoreExpires > now && value.scoreExpires <= now + SCORE_TTL && Number.isFinite(value.checkedAt) && value.checkedAt <= now;
     if (imageValid || ratingValid) saved.set(row[0], {
       url:imageValid ? value.url : null, expires:imageValid ? value.expires : 0,
-      score:ratingValid ? value.score : null, scoreExpires:ratingValid ? value.scoreExpires : 0,
+      scoreAvailable:ratingValid, score:ratingValid ? value.score : null, scoreExpires:ratingValid ? value.scoreExpires : 0,
       checkedAt:ratingValid ? value.checkedAt : 0,
       scoredBy:Number.isSafeInteger(value.scoredBy) && value.scoredBy > 0 ? value.scoredBy : null
     });
@@ -34,6 +34,27 @@ function forgetMetadata(id) { saved.delete(id); cache.delete(id); persist(); }
 let running = false;
 let pausedUntil = 0;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+let fallbackPausedUntil = 0;
+async function fallbackPoster(id) {
+  // Separate, conservative pacing for AniList; no user list data is sent.
+  await delay(Math.max(0, fallbackPausedUntil - Date.now()));
+  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch('https://graphql.anilist.co', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'omit', referrerPolicy:'no-referrer', signal:controller.signal,
+      body:JSON.stringify({query:'query ($id: Int!) { Media(idMal: $id, type: ANIME) { idMal coverImage { extraLarge large } } }', variables:{id}})
+    });
+    if (response.status === 429) {
+      const retry = Number(response.headers.get('Retry-After'));
+      fallbackPausedUntil = Date.now() + Math.max(60000, Math.min(Number.isFinite(retry) ? retry * 1000 : 60000, 300000));
+    }
+    if (!response.ok) return null;
+    const {data} = await response.json();
+    if (data?.Media?.idMal !== id) return null;
+    return safeImage(data.Media.coverImage?.extraLarge) || safeImage(data.Media.coverImage?.large);
+  } catch { return null; }
+  finally { clearTimeout(timeout); fallbackPausedUntil = Math.max(fallbackPausedUntil, Date.now() + 2100); }
+}
 async function processQueue() {
   if (running) return;
   running = true;
@@ -43,8 +64,10 @@ async function processQueue() {
     await delay(Math.max(0, pausedUntil - Date.now()));
     if (!job.targets.some(target => target.isConnected)) { cache.delete(job.id); job.resolve(null); continue; }
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 10000);
-    let metadata = null;
+    const existing = saved.get(job.id);
+    let metadata = existing?.scoreExpires > Date.now() ? {...existing} : null;
     try {
+      if (!metadata) {
       const response = await fetch(`https://api.jikan.moe/v4/anime/${job.id}`, {
         signal:controller.signal, credentials:'omit', referrerPolicy:'no-referrer'
       });
@@ -55,15 +78,22 @@ async function processQueue() {
           const now = Date.now();
           metadata = {
             url:safeImage(data.images?.webp?.large_image_url || data.images?.jpg?.large_image_url), expires:now + POSTER_TTL,
-            score:validScore(data.score) ? data.score : null,
+            scoreAvailable:true, score:validScore(data.score) ? data.score : null,
             scoredBy:Number.isSafeInteger(data.scored_by) && data.scored_by > 0 ? data.scored_by : null,
             scoreExpires:now + SCORE_TTL, checkedAt:now
           };
         }
       }
+      }
     } catch { /* Artwork and rating failures never block the calendar. */ }
     finally { clearTimeout(timeout); }
-    job.expires = metadata ? metadata.scoreExpires : Date.now() + 60000;
+    // Reuse a working cached poster during metadata outages before consulting a fallback.
+    if (!metadata?.url && job.targets.some(target => target.isConnected)) {
+      const cachedUrl = existing?.expires > Date.now() ? existing.url : null;
+      const url = cachedUrl || await fallbackPoster(job.id);
+      if (url) metadata = {...(metadata || {scoreAvailable:false, score:null, scoredBy:null, scoreExpires:0, checkedAt:0}), url, expires:cachedUrl ? existing.expires : Date.now() + POSTER_TTL};
+    }
+    job.expires = metadata?.scoreExpires > Date.now() ? metadata.scoreExpires : Date.now() + 60000;
     if (metadata) { saved.set(job.id, metadata); persist(); }
     job.resolve(metadata);
     pausedUntil = Math.max(pausedUntil, Date.now() + 1100);
@@ -72,7 +102,7 @@ async function processQueue() {
 }
 function getMetadata(id, target) {
   const stored = saved.get(id);
-  if (stored?.scoreExpires > Date.now()) return Promise.resolve(stored);
+  if (stored?.scoreExpires > Date.now() && ((stored.url && stored.expires > Date.now()) || target.closest('.compact'))) return Promise.resolve(stored);
   let job = cache.get(id);
   if (job && job.expires < Date.now()) { cache.delete(id); job = null; }
   if (!job) {
@@ -119,7 +149,7 @@ async function loadCard(card) {
   const metadata = await getMetadata(id, card);
   card.dataset.loading = 'false';
   if (!card.isConnected) return;
-  if (metadata) {
+  if (metadata && metadata.scoreAvailable !== false) {
     rating.textContent = metadata.score === null ? 'MAL: not rated yet' : `★ MAL ${metadata.score.toFixed(2)} / 10`;
     rating.title = `MAL community rating via Jikan. Checked ${new Date(metadata.checkedAt).toLocaleString()}.${metadata.scoredBy ? ` ${metadata.scoredBy.toLocaleString()} ratings.` : ''}`;
   } else {
